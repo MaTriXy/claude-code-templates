@@ -139,8 +139,8 @@ async function loadComponentsForSearch() {
             
             if (data) {
                 // Process each category for search
-                const categories = ['agents', 'commands', 'settings', 'hooks', 'mcps'];
-                
+                const categories = ['agents', 'commands', 'settings', 'hooks', 'mcps', 'skills'];
+
                 for (const category of categories) {
                     if (data[category] && Array.isArray(data[category])) {
                         // Process components to make them search-friendly
@@ -175,10 +175,10 @@ async function loadComponentsForSearch() {
         const response = await fetch('components.json');
         if (response.ok) {
             const data = await response.json();
-            
+
             // Process each category for search
-            const categories = ['agents', 'commands', 'settings', 'hooks', 'mcps'];
-            
+            const categories = ['agents', 'commands', 'settings', 'hooks', 'mcps', 'skills'];
+
             for (const category of categories) {
                 if (data[category] && Array.isArray(data[category])) {
                     // Process components to make them search-friendly
@@ -212,7 +212,7 @@ async function loadComponentsForSearch() {
         
         // Fallback: try to use cached data if available
         if (window.getSearchData) {
-            const categories = ['agents', 'commands', 'settings', 'hooks', 'mcps'];
+            const categories = ['agents', 'commands', 'settings', 'hooks', 'mcps', 'skills'];
             for (const category of categories) {
                 const data = window.getSearchData(category);
                 if (data && data.length > 0) {
@@ -242,6 +242,39 @@ function updateURLWithSearch(query) {
 function getSearchQueryFromURL() {
     const params = new URLSearchParams(window.location.search);
     return params.get('search') ? decodeURIComponent(params.get('search')) : null;
+}
+
+/**
+ * Update URL with filter using path-based routing
+ */
+function updateURLWithFilter(filter) {
+    const currentSearch = window.location.search; // Preserve search parameters
+    const newPath = `/${filter}${currentSearch}`;
+    
+    window.history.pushState({}, '', newPath);
+}
+
+/**
+ * Get filter from URL path
+ */
+function getFilterFromURL() {
+    const path = window.location.pathname;
+    const segments = path.split('/').filter(segment => segment);
+
+    // Check if first segment is a valid filter
+    const validFilters = ['agents', 'commands', 'settings', 'hooks', 'mcps', 'skills', 'templates', 'plugins'];
+    const firstSegment = segments[0];
+
+    if (firstSegment && validFilters.includes(firstSegment)) {
+        return firstSegment;
+    }
+
+    // If no valid filter found and we're on root, default to agents
+    if (path === '/' || path === '') {
+        return 'agents';
+    }
+
+    return 'agents'; // Default fallback
 }
 
 /**
@@ -390,7 +423,8 @@ function updateSearchResults(results, categoryMatches = new Set()) {
             commands: '⚡',
             settings: '⚙️',
             hooks: '🪝',
-            mcps: '🔌'
+            mcps: '🔌',
+            skills: '🎨'
         };
         
         const tags = Array.from(categoryMatches).map(category => {
@@ -447,8 +481,8 @@ function displaySearchResults(results) {
     
     // Render grouped results in specific order
     let html = '';
-    const categoryOrder = ['agents', 'commands', 'settings', 'hooks', 'mcps'];
-    
+    const categoryOrder = ['agents', 'commands', 'settings', 'hooks', 'mcps', 'skills'];
+
     categoryOrder.forEach(category => {
         if (!groupedResults[category]) return;
         const categoryResults = groupedResults[category];
@@ -486,7 +520,8 @@ function getCategoryIcon(category) {
         commands: '⚡',
         settings: '⚙️',
         hooks: '🪝',
-        mcps: '🔌'
+        mcps: '🔌',
+        skills: '🎨'
     };
     return icons[category] || '📦';
 }
@@ -508,7 +543,8 @@ function generateComponentCard(component, category) {
         command: { icon: '⚡', color: '#4ecdc4' },
         mcp: { icon: '🔌', color: '#45b7d1' },
         setting: { icon: '⚙️', color: '#9c88ff' },
-        hook: { icon: '🪝', color: '#ff8c42' }
+        hook: { icon: '🪝', color: '#ff8c42' },
+        skill: { icon: '🎨', color: '#f59e0b' }
     };
     
     const config = typeConfig[component.type];
@@ -610,6 +646,18 @@ function showAllComponents() {
 // No need for custom toggleCard function
 
 /**
+ * Initialize filter from URL parameters on page load
+ */
+function initializeFilterFromURL() {
+    const urlFilter = getFilterFromURL();
+    console.log('Initializing filter from URL:', urlFilter);
+    
+    if (urlFilter && typeof setUnifiedFilter === 'function') {
+        setUnifiedFilter(urlFilter);
+    }
+}
+
+/**
  * Initialize search from URL parameters on page load
  */
 function initializeSearchFromURL() {
@@ -668,6 +716,9 @@ function initializeSearchFromURL() {
 document.addEventListener('DOMContentLoaded', function() {
     // Load components for search
     loadComponentsForSearch();
+    
+    // Initialize filter from URL if present
+    initializeFilterFromURL();
     
     // Initialize search from URL if present
     initializeSearchFromURL();
